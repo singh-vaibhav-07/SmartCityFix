@@ -1,0 +1,23 @@
+server:
+  port: 8084
+
+spring:
+  application:
+    name: notification-service
+  datasource:
+    url: jdbc:postgresql://postgres:5432/notification_service
+    username: postgres
+    password: postgres
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  notification:
+    email:
+      enabled: true
+      from: noreply@smartcityfix.com
+    sms:
+      enabled: true

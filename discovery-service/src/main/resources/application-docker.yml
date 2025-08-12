@@ -1,0 +1,4 @@
+# discovery-service/src/main/resources/application-docker.yml
+spring:
+  config:
+    import: optional:configserver:http://config-service:8888

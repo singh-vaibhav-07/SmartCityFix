@@ -1,0 +1,184 @@
+version: '3.8'
+
+services:
+  # Infrastructure Services
+  postgres:
+    image: postgres:14-alpine
+    container_name: smartcityfix-postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_USER: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+      - ./infra/db-migrations:/docker-entrypoint-initdb.d
+    networks:
+      - smartcityfix-network
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  rabbitmq:
+    image: rabbitmq:3-management-alpine
+    container_name: smartcityfix-rabbitmq
+    ports:
+      - "5672:5672"
+      - "15672:15672"
+    environment:
+      RABBITMQ_DEFAULT_USER: guest
+      RABBITMQ_DEFAULT_PASS: guest
+    networks:
+      - smartcityfix-network
+    healthcheck:
+      test: ["CMD", "rabbitmq-diagnostics", "-q", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Core Services
+  config-service:
+    build: ./config-service
+    container_name: smartcityfix-config
+    ports:
+      - "8888:8888"
+    volumes:
+      - ./infra/config-repo:/config-repo
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CLOUD_CONFIG_SERVER_NATIVE_SEARCH_LOCATIONS=file:/config-repo
+    networks:
+      - smartcityfix-network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8888/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  discovery-service:
+    build: ./discovery-service
+    container_name: smartcityfix-discovery
+    ports:
+      - "8761:8761"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+    networks:
+      - smartcityfix-network
+    depends_on:
+      config-service:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8761/actuator/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  gateway-service:
+    build: ./gateway-service
+    container_name: smartcityfix-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+
+  # Business Services
+  user-service:
+    build: ./user-service
+    container_name: smartcityfix-user
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/user_service
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  complaint-service:
+    build: ./complaint-service
+    container_name: smartcityfix-complaint
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/complaint_service
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  department-service:
+    build: ./department-service
+    container_name: smartcityfix-department
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/department_service
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  notification-service:
+    build: ./notification-service
+    container_name: smartcityfix-notification
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/notification_service
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+  feedback-service:
+    build: ./feedback-service
+    container_name: smartcityfix-feedback
+    environment:
+      - SPRING_PROFILES_ACTIVE=docker
+      - SPRING_CONFIG_IMPORT=optional:configserver:http://config-service:8888
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://postgres:5432/feedback_service
+    networks:
+      - smartcityfix-network
+    depends_on:
+      discovery-service:
+        condition: service_healthy
+      postgres:
+        condition: service_healthy
+      rabbitmq:
+        condition: service_healthy
+
+networks:
+  smartcityfix-network:
+    driver: bridge
+
+volumes:
+  postgres-data:

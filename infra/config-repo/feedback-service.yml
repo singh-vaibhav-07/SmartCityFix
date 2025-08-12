@@ -1,0 +1,15 @@
+server:
+  port: 8085
+
+spring:
+  application:
+    name: feedback-service
+  datasource:
+    url: jdbc:postgresql://postgres:5432/feedback_service
+    username: postgres
+    password: postgres
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest

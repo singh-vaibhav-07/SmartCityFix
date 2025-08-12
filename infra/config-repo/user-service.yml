@@ -1,0 +1,20 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:postgresql://postgres:5432/user_service
+    username: postgres
+    password: postgres
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
+
+app:
+  jwt:
+    secret: your-secret-key-should-be-very-long-and-secure-in-production
+    expiration: 86400000  # 24 hours in milliseconds

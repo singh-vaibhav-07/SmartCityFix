@@ -1,0 +1,15 @@
+server:
+  port: 8083
+
+spring:
+  application:
+    name: department-service
+  datasource:
+    url: jdbc:postgresql://postgres:5432/department_service
+    username: postgres
+    password: postgres
+  rabbitmq:
+    host: rabbitmq
+    port: 5672
+    username: guest
+    password: guest
