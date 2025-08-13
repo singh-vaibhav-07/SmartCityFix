@@ -10,7 +10,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/department_service
     username: postgres
-    password: postgres
+    password: epam123
   jpa:
     hibernate:
       ddl-auto: validate
@@ -21,9 +21,55 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      departmentService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      departmentService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+app:
+  rabbitmq:
+    exchange: smartcityfix.exchange
+    queue:
+      complaint-created: smartcityfix.queue.complaint-created
+      complaint-resolved: smartcityfix.queue.complaint-resolved
+    routing-key:
+      complaint-created: smartcityfix.routing-key.complaint-created
+      complaint-assigned: smartcityfix.routing-key.complaint-assigned
+      complaint-resolved: smartcityfix.routing-key.complaint-resolved
+  routing:
+    max-distance-km: 5.0
+    use-fallback-department: true
+    fallback-department-id: # Set this to a valid UUID after creating a fallback department
