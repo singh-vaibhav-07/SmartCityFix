@@ -50,4 +50,12 @@ public class ApiResponse<T> {
                 .data(data)
                 .build();
     }
+
+    public static ApiResponse<Void> successNoData(String message) {
+        return ApiResponse.<Void>builder()
+                .success(true)
+                .message(message)
+                .data(null)
+                .build();
+    }
 }
