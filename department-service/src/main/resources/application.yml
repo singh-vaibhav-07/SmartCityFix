@@ -9,8 +9,8 @@ spring:
     import: optional:configserver:http://localhost:8888
   datasource:
     url: jdbc:postgresql://localhost:5432/department_service
-    username: postgres
-    password: epam123
+    username: ${DB_USER}
+    password: ${DB_USER}
   jpa:
     hibernate:
       ddl-auto: validate
