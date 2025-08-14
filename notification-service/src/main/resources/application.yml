@@ -1,4 +1,3 @@
-# notification-service/src/main/resources/application.yml
 server:
   port: 8084
 
@@ -21,9 +20,65 @@ spring:
   flyway:
     enabled: true
     baseline-on-migrate: true
+  rabbitmq:
+    host: localhost
+    port: 5672
+    username: guest
+    password: guest
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: vaidiv1407@gmail.com
+    password: aaaa aaaa aaaa aaaa
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
 
 management:
   endpoints:
     web:
       exposure:
         include: health,info,metrics
+  health:
+    circuitbreakers:
+      enabled: true
+  endpoint:
+    health:
+      show-details: always
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      notificationService:
+        registerHealthIndicator: true
+        slidingWindowSize: 10
+        minimumNumberOfCalls: 5
+        permittedNumberOfCallsInHalfOpenState: 3
+        automaticTransitionFromOpenToHalfOpenEnabled: true
+        waitDurationInOpenState: 5s
+        failureRateThreshold: 50
+        eventConsumerBufferSize: 10
+  retry:
+    instances:
+      notificationService:
+        maxAttempts: 3
+        waitDuration: 1s
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+
+app:
+  rabbitmq:
+    exchange: smartcityfix.exchange
+    queue:
+      user-registered: smartcityfix.queue.user-registered
+      complaint-created: smartcityfix.queue.complaint-created
+      complaint-assigned: smartcityfix.queue.complaint-assigned
+      complaint-resolved: smartcityfix.queue.complaint-resolved
+    routing-key:
+      user-registered: smartcityfix.routing-key.user-registered
+      complaint-created: smartcityfix.routing-key.complaint-created
+      complaint-assigned: smartcityfix.routing-key.complaint-assigned
+      complaint-resolved: smartcityfix.routing-key.complaint-resolved
